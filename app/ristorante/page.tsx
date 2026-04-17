@@ -31,16 +31,21 @@ export default function RistoranteDashboard() {
   };
 
   const chiudiTurno = () => {
-    if(confirm("Sicuro di voler chiudere il turno?")) {
+    if(confirm("Chiudere il turno in Cucina?")) {
       setTurnoIniziato(false);
       localStorage.removeItem("turno_ristorante");
     }
   };
 
   const fetchOrders = async () => {
-    const { data } = await supabase.from("orders").select(`*, order_items (*)`).in("status", ["nuovo", "in_preparazione"]).order("created_at", { ascending: true });
+    const { data } = await supabase
+      .from("orders")
+      .select(`*, order_items (*)`)
+      .in("status", ["nuovo", "in_preparazione"])
+      .order("created_at", { ascending: true });
+      
     if (data) {
-      const nuoviOrdini = data.filter(o => o.status === "nuovo").length;
+      const nuoviOrdini = data.filter((o: any) => o.status === "nuovo").length;
       if (nuoviOrdini > ordiniPrecedenti.current && turnoIniziato) playBeep();
       ordiniPrecedenti.current = nuoviOrdini;
       setOrders(data);
@@ -55,11 +60,11 @@ export default function RistoranteDashboard() {
     }
   }, [turnoIniziato]);
 
-  const aggiornaStato = async (orderId: string, nuovoStato: string, customerPhone?: string, orderNumber?: number) => {
+  const aggiornaStato = async (orderId: string, nuovoStato: string, phone: string | null, num: number) => {
     await supabase.from("orders").update({ status: nuovoStato }).eq("id", orderId);
-    if (nuovoStato === "in_consegna" && customerPhone) {
-      const msg = `Ciao! Il tuo ordine N°${orderNumber} è in arrivo al Parallelo40! 🏖️`;
-      window.open(`https://wa.me/${customerPhone.replace(/\s+/g, '')}?text=${encodeURIComponent(msg)}`, "_blank");
+    if (nuovoStato === "in_consegna" && phone) {
+      const msg = `Ciao! Il tuo ordine N°${num} è in arrivo al Parallelo40! 🏖️`;
+      window.open(`https://wa.me/${phone.replace(/\s+/g, '')}?text=${encodeURIComponent(msg)}`, "_blank");
     }
     fetchOrders();
   };
@@ -68,13 +73,12 @@ export default function RistoranteDashboard() {
 
   if (!turnoIniziato) {
     return (
-      <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center p-4">
-        <img src="https://www.piazzagaribaldi.net/wp-content/uploads/logo-piazza-garibaldi-porto-torres-300x188.png" className="h-24 mb-12" />
-        <div className="bg-white p-8 rounded-[40px] text-center max-w-md w-full shadow-2xl">
+      <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center p-4 text-center">
+        <img src="https://www.piazzagaribaldi.net/wp-content/uploads/logo-piazza-garibaldi-porto-torres-300x188.png" className="h-20 mb-10" />
+        <div className="bg-white p-8 rounded-[40px] max-w-sm w-full shadow-2xl">
           <Volume2 size={48} className="mx-auto text-[#f2aa39] mb-4" />
-          <h1 className="text-2xl font-black text-gray-800 mb-2 leading-tight">Pronto per il Servizio?</h1>
-          <p className="text-gray-500 mb-8 px-4">Avvia il turno per ricevere gli ordini e attivare le notifiche sonore.</p>
-          <button onClick={avviaTurno} className="w-full bg-[#f2aa39] text-white font-black py-5 rounded-2xl shadow-lg active:scale-95 transition-all text-xl">
+          <h1 className="text-2xl font-black text-gray-800 mb-8 leading-tight">Servizio Cucina</h1>
+          <button onClick={avviaTurno} className="w-full bg-[#f2aa39] text-white font-black py-5 rounded-2xl shadow-lg text-xl">
             INIZIA TURNO
           </button>
         </div>
@@ -86,15 +90,14 @@ export default function RistoranteDashboard() {
     <div className="min-h-screen bg-gray-100 p-4 pb-24">
       <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm border-l-4 border-[#f2aa39]">
         <div>
-          <h1 className="text-xl font-black text-gray-800 tracking-tighter uppercase">Cucina Garibaldi</h1>
-          <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest">● Sistema Online</p>
+          <h1 className="text-xl font-black text-gray-800">CUCINA</h1>
+          <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest">● Online</p>
         </div>
         <div className="flex items-center gap-2">
-          {/* TASTO STATISTICHE */}
-          <Link href="/manager/parallelo40" className="bg-blue-50 text-blue-600 p-3 rounded-xl hover:bg-blue-100">
+          <Link href="/manager/parallelo40" className="bg-blue-50 text-blue-600 p-3 rounded-xl">
             <BarChart3 size={22} />
           </Link>
-          <button onClick={chiudiTurno} className="bg-red-50 text-red-600 p-3 rounded-xl hover:bg-red-100">
+          <button onClick={chiudiTurno} className="bg-red-50 text-red-600 p-3 rounded-xl">
             <PowerOff size={22} />
           </button>
         </div>
@@ -119,8 +122,10 @@ export default function RistoranteDashboard() {
                 </div>
               ))}
             </div>
-            <button onClick={() => aggiornaStato(order.id, order.status === "nuovo" ? "in_preparazione" : "in_consegna", order.customer_phone, order.order_number)}
-              className={`w-full py-4 rounded-2xl font-black text-white shadow-lg flex justify-center items-center gap-2 transition-all ${order.status === "nuovo" ? "bg-gray-900" : "bg-green-500"}`}>
+            <button 
+              onClick={() => aggiornaStato(order.id, order.status === "nuovo" ? "in_preparazione" : "in_consegna", order.customer_phone, order.order_number)}
+              className={`w-full py-4 rounded-2xl font-black text-white shadow-lg flex justify-center items-center gap-2 transition-all ${order.status === "nuovo" ? "bg-gray-900" : "bg-green-500"}`}
+            >
               {order.status === "nuovo" ? <><ChefHat size={20}/> PREPARA</> : <><CheckCircle size={20}/> PRONTO</>}
             </button>
           </div>
