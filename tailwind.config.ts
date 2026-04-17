@@ -11,7 +11,6 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
-        -- Qui inseriamo i tuoi colori!
         ristorante: "#f2aa39",
         parallelo: "#00c0f4",
       },
